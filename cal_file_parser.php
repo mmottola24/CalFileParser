@@ -16,11 +16,13 @@ class CalFileParser {
         
     }
 
-    function set_base_path($path) {
-        $this->_base_path = $path;
+    public function set_base_path($path) {
+        if (!empty($path)) {
+            $this->_base_path = $path;
+        }
     }
 
-    function get_base_path($path) {
+    public function get_base_path() {
         return $this->_base_path;
     }
 
@@ -35,7 +37,7 @@ class CalFileParser {
      *  read_file('../2011-08/'schedule.vcal');
      *  read_file('http://michaelencode.com/example.vcal');
      */
-    protected function read_file($file) {
+    public function readFile($file) {
 
         if (file_exists($this->_base_path . $file)) {
 
@@ -59,7 +61,7 @@ class CalFileParser {
      */
     public function parse($file, $output = 'array') {
         
-        $file_contents = $this->read_file($file);
+        $file_contents = $this->readFile($file);
 
         if ($file_contents === false) {
             return 'Error: File Could not be read';
