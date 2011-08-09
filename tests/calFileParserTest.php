@@ -1,5 +1,5 @@
 <?php
-require_once('../cal_file_parser.php');
+require_once('../CalFileParser.php');
 //require_once('PHPUnit.php');
 
 class CalFileParserTest extends PHPUnit_Framework_TestCase {
