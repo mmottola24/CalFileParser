@@ -11,9 +11,11 @@
 class CalFileParser {
 
     private $_base_path = './';
+    private $_file_name = '';
+    private $_output = 'array';
     
     function __construct() {
-        
+        $this->_default_output = $this->_output;
     }
 
     public function set_base_path($path) {
@@ -22,14 +24,34 @@ class CalFileParser {
         }
     }
 
+    public function set_file_name($filename) {
+        if (!empty($filename)) {
+            $this->_file_name = $filename;
+        }
+    }
+
+    public function set_output($output) {
+        if (!empty($output)) {
+            $this->_output = $output;
+        }
+    }
+
     public function get_base_path() {
         return $this->_base_path;
+    }
+
+    public function get_file_name() {
+        return $this->_file_name;
+    }
+
+    public function get_output() {
+        return $this->_output;
     }
 
     /**
      * Read File
      *
-     * @param $file
+     * @param string $file
      * @return string
      *
      * @example
@@ -37,9 +59,13 @@ class CalFileParser {
      *  read_file('../2011-08/'schedule.vcal');
      *  read_file('http://michaelencode.com/example.vcal');
      */
-    public function readFile($file) {
+    public function read_file($file = '') {
 
-        if (file_exists($this->_base_path . $file)) {
+        if (empty($file)) {
+            $file = $this->_file_name;
+        }
+        
+        if (!empty($file) && file_exists($this->_base_path . $file)) {
 
             $file_contents = file_get_contents($this->_base_path . $file);
 
@@ -55,16 +81,24 @@ class CalFileParser {
     /**
      * Parse
      * Parses iCal or vCal file and returns data of a type that is specified
-     * @param $file
+     * @param string $file
      * @param string $output
      * @return mixed|string
      */
-    public function parse($file, $output = 'array') {
+    public function parse($file = '', $output = '') {
         
-        $file_contents = $this->readFile($file);
+        $file_contents = $this->read_file($file);
 
         if ($file_contents === false) {
             return 'Error: File Could not be read';
+        }
+
+        if (empty($output)) {
+            $output = $this->_output;
+        }
+
+        if (empty($output)) {
+            $output = $this->_default_output;
         }
 
         $events_arr = array();
@@ -87,6 +121,8 @@ class CalFileParser {
             }
 
         }
+
+        $this->_output = $this->_default_output;
 
         return $this->output($events_arr, $output);
 
