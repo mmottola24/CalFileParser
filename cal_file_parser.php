@@ -64,6 +64,10 @@ class CalFileParser {
         if (empty($file)) {
             $file = $this->_file_name;
         }
+
+        if (substr($file, 0, 7) == "http://") {
+            return $this->read_remote_file($file);
+        }
         
         if (!empty($file) && file_exists($this->_base_path . $file)) {
 
@@ -76,6 +80,16 @@ class CalFileParser {
         }
 
 
+    }
+
+    public function read_remote_file($file) {
+        if (!empty($file)) {
+            $data = file_get_contents($file);
+            if ($data !== false) {
+                return $data;
+            }
+        }
+        return false;
     }
 
     /**
