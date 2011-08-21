@@ -241,7 +241,7 @@ class CalFileParser {
 
                 $tmp_arr =  explode(':',$event_key_pairs[$i]);
 
-                $key = trim($tmp_arr[0]);
+                $key = strtolower(trim($tmp_arr[0]));
                 $value = trim($tmp_arr[1]);
 
                 $event[$key] = $value;
