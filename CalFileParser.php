@@ -74,7 +74,7 @@ class CalFileParser {
             $file_contents = file_get_contents($this->_base_path . $file);
 
             return $file_contents;
-            
+
         } else {
             return false;
         }
@@ -82,6 +82,11 @@ class CalFileParser {
 
     }
 
+    /**
+     * Read Remote File
+     * @param $file
+     * @return bool|string
+     */
     public function read_remote_file($file) {
         if (!empty($file)) {
             $data = file_get_contents($file);
@@ -193,6 +198,7 @@ class CalFileParser {
 
                         //adds delimiter to front and back of item string, and also between each new key
                         $item_str = trim(str_replace(array($last_word,' %%' . $last_word),array('%%' . $last_word . ':', '%%' . $last_word), $item_str));
+
                     }
 
                     //build the event string back together, piece by piece
@@ -200,8 +206,12 @@ class CalFileParser {
                 }
             }
 
-            //replace first and last delimiter
-            $event_str = substr($event_str, 2, -2);
+            //perform some house cleaning just in case
+            $event_str = str_replace('%%%%','%%', $event_str);
+
+            if (substr($event_str, 0, 2) == '%%') {
+                $event_str = substr($event_str, 2);
+            }
 
             //break string into array elements at custom delimiter
             $return = explode('%%',$event_str);
