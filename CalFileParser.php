@@ -3,9 +3,13 @@
 /*
  * CalFileParser
  *
+ * Parser for iCal and vCal files. Reads event information and
+ * outputs data into an Array or JSON
+ *
  * @author Michael Mottola <info@michaelencode.com>
  * @license MIT
  * @version 1.0
+ * 
  */
 
 class CalFileParser {
@@ -65,7 +69,7 @@ class CalFileParser {
             $file = $this->_file_name;
         }
 
-        if (substr($file, 0, 7) == "http://") {
+        if (substr($file, 0, 7) == "http://" || substr($file, 0, 8) == "https://") {
             return $this->read_remote_file($file);
         }
         
