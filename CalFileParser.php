@@ -6,7 +6,7 @@
  * Parser for iCal and vCal files. Reads event information and
  * outputs data into an Array or JSON
  *
- * @author Michael Mottola <info@michaelencode.com>
+ * @author Michael Mottola <mikemottola@gmail.com>
  * @license MIT
  * @version 1.0
  * 
@@ -23,7 +23,7 @@ class CalFileParser {
     }
 
     public function set_base_path($path) {
-        if (!empty($path)) {
+        if (isset($path)) {
             $this->_base_path = $path;
         }
     }
@@ -69,8 +69,14 @@ class CalFileParser {
             $file = $this->_file_name;
         }
 
-        if (substr($file, 0, 7) == "http://" || substr($file, 0, 8) == "https://") {
+		// check to see if file path is a url
+        if (substr($file, 0, 7) === "http://" || substr($file, 0, 8) === "https://") {
             return $this->read_remote_file($file);
+        }
+        
+        //empty base path if file starts with forward-slash
+        if (substr($file, 0, 1) === '/') {
+        	$this->set_base_path('');
         }
         
         if (!empty($file) && file_exists($this->_base_path . $file)) {
@@ -82,7 +88,6 @@ class CalFileParser {
         } else {
             return false;
         }
-
 
     }
 
@@ -254,8 +259,7 @@ class CalFileParser {
         }
 
         return $event;
-
+        
     }
-
 }
 ?>
