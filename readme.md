@@ -4,7 +4,7 @@ Parser for Calendar files (.ical, .vcal, .ics). Reads event information and outp
 
 *Supports parsing iCal and vCal files*
 
-## Initialiing Class
+## Initializing Class
 	
 	include('../CalFileParser.php');
 
@@ -12,9 +12,9 @@ Parser for Calendar files (.ical, .vcal, .ics). Reads event information and outp
 	
 ## Public Functions
 
-* parse($file = '', $output = '') 
+* parse($file = '', $output = 'array') //reads file and outputs either array or json
 
-* set_base_path($path) // defaults to './'
+* set_base_path($path) // defaults to './', not required if setting file_name to absolute path
 * set_file_name($filename) // local file or URL
 * set_output($output) // 'array' or 'json'
 
