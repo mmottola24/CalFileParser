@@ -51,7 +51,7 @@ Parser for Calendar files (.ical, .vcal, .ics). Reads event information and outp
 	
 # License (MIT)
 
-Copyright (c) 2011 Michael Mottola <mikemottola@gmail.com>
+Copyright © 2011 Michael Mottola
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
