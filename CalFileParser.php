@@ -17,6 +17,8 @@ class CalFileParser {
     private $_base_path = './';
     private $_file_name = '';
     private $_output = 'array';
+    private $DTfields = array('dtstart', 'dtend', 'dtstamp', 'created', 'last-modified');
+    private $timezone = null;
     
     function __construct() {
         $this->_default_output = $this->_output;
@@ -125,6 +127,15 @@ class CalFileParser {
         }
 
         $events_arr = array();
+
+
+        // fetch timezone to create datetime object
+        if (preg_match('/X-WR-TIMEZONE:(.+)/i', $file_contents, $timezone) === 1) {
+            $date = DateTime::createFromFormat('e', trim($timezone[1]));
+            if ($date !== false) {
+                $this->timezone = $date->getTimezone();
+            }
+        }
 
         //put contains between start and end of VEVENT into array called $events
         preg_match_all('/(BEGIN:VEVENT.*?END:VEVENT)/si', $file_contents, $events);
@@ -239,15 +250,23 @@ class CalFileParser {
                 } else {
                     list($key, $value) = explode(':', $line, 2);
                     $key = strtolower(trim($key));
+
+                    // autoconvert datetime fields to DateTime object
+                    if (in_array($key, $this->DTfields)) {
+                        $dt_str = str_replace(array('T', 'Z'), array('-', ''), $value);
+                        $date = DateTime::createFromFormat('Ymd-His', $dt_str, $this->timezone);
+                        if ($date !== false) {
+                            $value = $date;
+                        }
+                    }
                     $event[$key] = $value;
                 }
             }
         }
 
-        foreach ($event as $ky => $vl) {
-            $event[$ky] = stripcslashes($vl);
-        }
-
-        return $event;
+        // unescape every element if string.
+        return array_map(function($value) {
+            return (is_string($value) ? stripcslashes($value) : $value);
+        }, $event);
     }
 }
