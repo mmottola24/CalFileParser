@@ -70,7 +70,7 @@ class CalFileParser {
         }
 
 		// check to see if file path is a url
-        if (substr($file, 0, 7) === "http://" || substr($file, 0, 8) === "https://") {
+        if (preg_match('/^(http|https):/', $file) === 1) {
             return $this->read_remote_file($file);
         }
         
@@ -80,15 +80,11 @@ class CalFileParser {
         }
         
         if (!empty($file) && file_exists($this->_base_path . $file)) {
-
             $file_contents = file_get_contents($this->_base_path . $file);
-
             return $file_contents;
-
         } else {
             return false;
         }
-
     }
 
     /**
@@ -114,7 +110,6 @@ class CalFileParser {
      * @return mixed|string
      */
     public function parse($file = '', $output = '') {
-        
         $file_contents = $this->read_file($file);
 
         if ($file_contents === false) {
@@ -145,15 +140,12 @@ class CalFileParser {
 
                 //convert array of 'key:value' strings to an array of key => values
                 $events_arr[] = $this->convert_key_value_strings($event_key_pairs);
-
             }
-
         }
 
         $this->_output = $this->_default_output;
 
         return $this->output($events_arr, $output);
-
     }
 
     /**
@@ -183,15 +175,12 @@ class CalFileParser {
      * @return array
      */
     private function convert_event_string_to_array($event_str = '') {
-
         if (!empty($event_str)) {
             //replace new lines with a custom delimiter
             $event_str = preg_replace("/[\r\n]/", "%%" ,$event_str);
 
             if (strpos(substr($event_str, 2), '%%') == '0') { //if this code is executed, then file consisted of one line causing previous tactic to fail
-
                 $tmp_piece = explode(':',$event_str);
-
                 $num_pieces = count($tmp_piece);
 
                 $event_str = '';
@@ -207,7 +196,6 @@ class CalFileParser {
 
                         //adds delimiter to front and back of item string, and also between each new key
                         $item_str = trim(str_replace(array($last_word,' %%' . $last_word),array('%%' . $last_word . ':', '%%' . $last_word), $item_str));
-
                     }
 
                     //build the event string back together, piece by piece
@@ -224,7 +212,6 @@ class CalFileParser {
 
             //break string into array elements at custom delimiter
             $return = explode('%%',$event_str);
-
         } else {
             $return = array();
         }
@@ -239,27 +226,28 @@ class CalFileParser {
      * @return array
      */
     private function convert_key_value_strings($event_key_pairs = array()) {
-
         $event = array();
 
         if (!empty($event_key_pairs)) {
+            foreach ($event_key_pairs as $line) {
+                if (empty($line)) {
+                    continue;
+                }
 
-            $num_key_pairs = count($event_key_pairs);
-
-            for ($i = 0; $i < $num_key_pairs; $i++) {
-
-                $tmp_arr =  explode(':',$event_key_pairs[$i]);
-
-                $key = strtolower(trim($tmp_arr[0]));
-                $value = trim($tmp_arr[1]);
-
-                $event[$key] = $value;
-
+                if ($line[0] == ' ') {
+                    $event[$key] .= substr($line, 1);   
+                } else {
+                    list($key, $value) = explode(':', $line, 2);
+                    $key = strtolower(trim($key));
+                    $event[$key] = $value;
+                }
             }
         }
 
+        foreach ($event as $ky => $vl) {
+            $event[$ky] = stripcslashes($vl);
+        }
+
         return $event;
-        
     }
 }
-?>
