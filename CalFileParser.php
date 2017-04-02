@@ -18,7 +18,8 @@ class CalFileParser {
     private $_file_name = '';
     private $_output = 'array';
     private $DTfields = array('DTSTART', 'DTEND', 'DTSTAMP', 'CREATED', 'EXDATE', 'LAST-MODIFIED');
-    private $timezone = null;
+    private $_user_timezone = null;
+    private $_file_timezone = null;
 
     function __construct() {
         $this->_default_output = $this->_output;
@@ -39,6 +40,12 @@ class CalFileParser {
     public function set_output($output) {
         if (!empty($output)) {
             $this->_output = $output;
+        }
+    }
+
+    public function set_timezone($timezone) {
+        if (!empty($timezone)) {
+            $this->_user_timezone = $timezone;
         }
     }
 
@@ -131,7 +138,17 @@ class CalFileParser {
 
         // fetch timezone to create datetime object
         if (preg_match('/X-WR-TIMEZONE:(.+)/i', $file_contents, $timezone) === 1) {
-            $this->timezone = trim($timezone[1]);
+            $this->_file_timezone = trim($timezone[1]);
+            if ($this->_user_timezone == null) {
+                $this->_user_timezone = $this->_file_timezone;
+            }
+        } else {
+            $this->_file_timezone = $this->_user_timezone;
+        }
+
+        // tell user if setting timezone is necessary
+        if ($this->_user_timezone == null) {
+            return 'Error: no timezone set or found';
         }
 
         //put contains between start and end of VEVENT into array called $events
@@ -238,6 +255,9 @@ class CalFileParser {
      */
     private function convert_key_value_strings($event_key_pairs = array()) {
         $event = array();
+        $event_alarm = array();
+        $event_alarms = array();
+        $inside_alarm = false;
 
         if (!empty($event_key_pairs)) {
             foreach ($event_key_pairs as $line) {
@@ -248,41 +268,97 @@ class CalFileParser {
                 $key = trim((isset($line_data[0])) ? $line_data[0] : "");
                 $value = trim((isset($line_data[1])) ? $line_data[1] : "");
 
+                // we are parsing an alarm for this event
+                if ($key == "BEGIN" && $value == "VALARM") {
+                    $inside_alarm = true;
+                    $event_alarm = array();
+                    continue;
+                }
+
+                // we finished parsing an alarm for this event
+                if ($key == "END" && $value == "VALARM") {
+                    $inside_alarm = false;
+                    $event_alarms[] = $event_alarm;
+                    continue;
+                }
+
                 // autoconvert datetime fields to DateTime object
                 $date_key = (strstr($key,";")) ? strstr($key,";", true) : $key;
                 $date_format = (strstr($key,";")) ? strstr($key,";") : ";VLAUE=DATE-TIME";
 
                 if (in_array($date_key, $this->DTfields)) {
 
-                    // this is simply a date
-                    if ($date_format == ";VALUE=DATE") {
-                        $date = DateTime::createFromFormat('Ymd', $value, new DateTimeZone($this->timezone));
+                    // set date key without format
+                    $key = $date_key;
 
-                    } else {
-                        $timezone = $this->timezone;
+                    $timezone = $this->_file_timezone;
 
-                        // found time zone in date format info
-                        if (strstr($date_format,"TZID")) {
-                            $timezone = substr($date_format, 5);
-                        }
+                    // found time zone in date format info
+                    if (strstr($date_format,"TZID")) $timezone = substr($date_format, 5);
+
+                    // process all dates if there are more then one and comma seperated
+                    $processed_value = array();
+                    foreach(explode(",", $value) AS $date_value) {
+
+                        // this is simply a date
+                        if ($date_format == ";VALUE=DATE") $date_value .= "T000000";
 
                         // date-time in UTC
-                        if (substr($value, -1) == "Z") {
-                            $timezone = "UTC";
-                        }
+                        if (substr($date_value, -1) == "Z") $timezone = "UTC";
 
                         // format date
-                        $date = DateTime::createFromFormat('Ymd\THis', str_replace('Z', '', $value), new DateTimeZone($timezone));
-                        $date->setTimezone(new DateTimeZone($this->timezone));
+                        $date = DateTime::createFromFormat('Ymd\THis', str_replace('Z', '', $date_value), new DateTimeZone($timezone));
+                        if ($date !== false) $date->setTimezone(new DateTimeZone($this->_user_timezone));
+
+                        if ($date !== false) $processed_value[] = $date;
                     }
 
-                    if ($date !== false) {
-                        $value = $date;
+                    // we have more then one date value then return it as an array
+                    if (count($processed_value) > 1) {
+                        $value = $processed_value;
+                    } else {
+                        if ($date !== false) $value = $date;
                     }
                 }
-                $event[$key] = $value;
+
+                // check if current key was already set
+                // if this is the case then add value data and turn it into an array
+                $value_current_key = false;
+                if ($inside_alarm) {
+                    if (isset($event_alarm[$key])) $value_current_key = $event_alarm[$key];
+                } else {
+                    if (isset($event[$key])) $value_current_key = $event[$key];
+                }
+
+                // this current key already has data add more
+                if ($value_current_key !== false) {
+
+                    // check if data is array and merge
+                    if (is_array($value_current_key)) {
+                        if (is_array($value)) {
+                            $value = array_merge($value_current_key, $value);
+                        } else {
+                            $value = array_merge($value_current_key, array($value));
+                        }
+                    } else {
+                        if (is_array($value)) {
+                            $value = array_merge(array($value_current_key), $value);
+                        } else {
+                            $value = array($value_current_key, $value);
+                        }
+                    }
+                }
+
+                if ($inside_alarm) {
+                    $event_alarm[$key] = $value;
+                } else {
+                    $event[$key] = $value;
+                }
             }
         }
+
+        // add alarm data
+        $event["VALARM"] = $event_alarms;
 
         // unescape every element if string.
         return array_map(function($value) {
