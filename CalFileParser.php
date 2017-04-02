@@ -9,7 +9,7 @@
  * @author Michael Mottola <mikemottola@gmail.com>
  * @license MIT
  * @version 1.0
- * 
+ *
  */
 
 class CalFileParser {
@@ -17,9 +17,9 @@ class CalFileParser {
     private $_base_path = './';
     private $_file_name = '';
     private $_output = 'array';
-    private $DTfields = array('dtstart', 'dtend', 'dtstamp', 'created', 'last-modified');
+    private $DTfields = array('DTSTART', 'DTEND', 'DTSTAMP', 'CREATED', 'EXDATE', 'LAST-MODIFIED');
     private $timezone = null;
-    
+
     function __construct() {
         $this->_default_output = $this->_output;
     }
@@ -71,16 +71,16 @@ class CalFileParser {
             $file = $this->_file_name;
         }
 
-		// check to see if file path is a url
+        // check to see if file path is a url
         if (preg_match('/^(http|https):/', $file) === 1) {
             return $this->read_remote_file($file);
         }
-        
+
         //empty base path if file starts with forward-slash
         if (substr($file, 0, 1) === '/') {
-        	$this->set_base_path('');
+            $this->set_base_path('');
         }
-        
+
         if (!empty($file) && file_exists($this->_base_path . $file)) {
             $file_contents = file_get_contents($this->_base_path . $file);
             return $file_contents;
@@ -131,10 +131,7 @@ class CalFileParser {
 
         // fetch timezone to create datetime object
         if (preg_match('/X-WR-TIMEZONE:(.+)/i', $file_contents, $timezone) === 1) {
-            $date = DateTime::createFromFormat('e', trim($timezone[1]));
-            if ($date !== false) {
-                $this->timezone = $date->getTimezone();
-            }
+            $this->timezone = trim($timezone[1]);
         }
 
         //put contains between start and end of VEVENT into array called $events
@@ -190,6 +187,9 @@ class CalFileParser {
             //replace new lines with a custom delimiter
             $event_str = preg_replace("/[\r\n]/", "%%" ,$event_str);
 
+            // take care of line wrapping
+            $event_str = preg_replace("/%%%% /", "" ,$event_str);
+
             if (strpos(substr($event_str, 2), '%%') == '0') { //if this code is executed, then file consisted of one line causing previous tactic to fail
                 $tmp_piece = explode(':',$event_str);
                 $num_pieces = count($tmp_piece);
@@ -241,26 +241,46 @@ class CalFileParser {
 
         if (!empty($event_key_pairs)) {
             foreach ($event_key_pairs as $line) {
-                if (empty($line)) {
-                    continue;
-                }
 
-                if ($line[0] == ' ') {
-                    $event[$key] .= substr($line, 1);   
-                } else {
-                    list($key, $value) = explode(':', $line, 2);
-                    $key = strtolower(trim($key));
+                if (empty($line)) continue;
 
-                    // autoconvert datetime fields to DateTime object
-                    if (in_array($key, $this->DTfields)) {
-                        $dt_str = str_replace(array('T', 'Z'), array('-', ''), $value);
-                        $date = DateTime::createFromFormat('Ymd-His', $dt_str, $this->timezone);
-                        if ($date !== false) {
-                            $value = $date;
+                $line_data = explode(':', $line, 2);
+                $key = trim((isset($line_data[0])) ? $line_data[0] : "");
+                $value = trim((isset($line_data[1])) ? $line_data[1] : "");
+
+                // autoconvert datetime fields to DateTime object
+                $date_key = (strstr($key,";")) ? strstr($key,";", true) : $key;
+                $date_format = (strstr($key,";")) ? strstr($key,";") : ";VLAUE=DATE-TIME";
+
+                if (in_array($date_key, $this->DTfields)) {
+
+                    // this is simply a date
+                    if ($date_format == ";VALUE=DATE") {
+                        $date = DateTime::createFromFormat('Ymd', $value, new DateTimeZone($this->timezone));
+
+                    } else {
+                        $timezone = $this->timezone;
+
+                        // found time zone in date format info
+                        if (strstr($date_format,"TZID")) {
+                            $timezone = substr($date_format, 5);
                         }
+
+                        // date-time in UTC
+                        if (substr($value, -1) == "Z") {
+                            $timezone = "UTC";
+                        }
+
+                        // format date
+                        $date = DateTime::createFromFormat('Ymd\THis', str_replace('Z', '', $value), new DateTimeZone($timezone));
+                        $date->setTimezone(new DateTimeZone($this->timezone));
                     }
-                    $event[$key] = $value;
+
+                    if ($date !== false) {
+                        $value = $date;
+                    }
                 }
+                $event[$key] = $value;
             }
         }
 
