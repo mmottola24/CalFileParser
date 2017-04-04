@@ -17,6 +17,7 @@ Parser for Calendar files (.ical, .vcal, .ics). Reads event information and outp
 * set_base_path($path) // defaults to './', not required if setting file_name to absolute path
 * set_file_name($filename) // local file or URL
 * set_output($output) // 'array' or 'json'
+* set_timezone($timezone) // i.e. "Europe/Berlin", "UTC", "Australia/Sydney", ...
 
 * get_base_path();
 * get_file_name();
@@ -36,19 +37,25 @@ Parser for Calendar files (.ical, .vcal, .ics). Reads event information and outp
 
 	$example3 = $cal->parse('http://mywebsite.com/events.ical');
 	
-**alternative method to choose file**
+**Alternative method to choose file**
 
 	$cal->set_file_name('icalexample.ics');
 	
 	$example4 = $cal->parse();
 	
-**alternative methods to select path and output**
+**Alternative methods to select path and output**
 
 	$cal->set_base_path('./');
 	$cal->set_file_name('icalexample.ics');
 	$cal->set_output('json');
 	$example5 = $cal->parse();
-	
+
+**Set timezone for returned data**
+
+	$cal->set_timezone('Europe/Berlin');
+	$example6 = $cal->parse('schedule.ical');
+
+
 # License (MIT)
 
 Copyright © 2011 Michael Mottola
