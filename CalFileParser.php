@@ -284,7 +284,7 @@ class CalFileParser {
 
                 // autoconvert datetime fields to DateTime object
                 $date_key = (strstr($key,";")) ? strstr($key,";", true) : $key;
-                $date_format = (strstr($key,";")) ? strstr($key,";") : ";VLAUE=DATE-TIME";
+                $date_format = (strstr($key,";")) ? strstr($key,";") : ";VALUE=DATE-TIME";
 
                 if (in_array($date_key, $this->DTfields)) {
 
