@@ -294,8 +294,11 @@ class CalFileParser {
                     $timezone = $this->_file_timezone;
 
                     // found time zone in date format info
-                    if (strstr($date_format,"TZID")) $timezone = substr($date_format, 5);
-
+                    if (strstr($date_format,"TZID")) {
+                        $strstr = strstr($date_format,"TZID");
+                        $timezone = substr($strstr, 5);
+                    }
+                    
                     // process all dates if there are more then one and comma seperated
                     $processed_value = array();
                     foreach(explode(",", $value) AS $date_value) {
