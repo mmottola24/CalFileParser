@@ -1,0 +1,6 @@
+{
+    "name": "controlz/calfileparser",
+    "description": "PHP Parser for Calendar files (.ical, .vcal, .ics)",
+    "license": "MIT",
+    "type": "library"
+}
