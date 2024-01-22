@@ -20,6 +20,7 @@ class CalFileParser {
     private $DTfields = array('DTSTART', 'DTEND', 'DTSTAMP', 'CREATED', 'EXDATE', 'LAST-MODIFIED');
     private $_user_timezone = null;
     private $_file_timezone = null;
+    private $_default_output = null;
 
     function __construct() {
         $this->_default_output = $this->_output;
